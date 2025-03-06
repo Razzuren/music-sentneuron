@@ -8,19 +8,22 @@ import midi_encoder as me
 
 # Directory where the checkpoints will be saved
 TRAIN_DIR = "./trained"
+seq_length = 0
 
 def generative_loss(labels, logits):
     return tf.keras.losses.sparse_categorical_crossentropy(labels, logits, from_logits=True)
 
 def build_generative_model(vocab_size, embed_dim, lstm_units, lstm_layers, batch_size, dropout=0):
     model = tf.keras.Sequential()
+    model.add(tf.keras.Input(shape=(seq_length,), batch_size=batch_size))
 
-    model.add(tf.keras.layers.Embedding(vocab_size, embed_dim, batch_input_shape=[batch_size, None]))
+    model.add(tf.keras.layers.Embedding(vocab_size, embed_dim))
 
     for i in range(max(1, lstm_layers)):
         model.add(tf.keras.layers.LSTM(lstm_units, return_sequences=True, stateful=True, dropout=dropout, recurrent_dropout=dropout))
 
     model.add(tf.keras.layers.Dense(vocab_size))
+    print(model.summary())
 
     return model
 
@@ -42,7 +45,7 @@ def build_char2idx(train_vocab, test_vocab):
     return char2idx, vocab_size
 
 def build_dataset(text, char2idx, seq_length, batch_size, buffer_size=10000):
-    text_as_int = np.array([char2idx[c] for c in text.split(" ")])
+    text_as_int = np.array([char2idx[c] for c in text.split(" ") if c.strip() != ""])
     char_dataset = tf.data.Dataset.from_tensor_slices(text_as_int)
 
     sequences = char_dataset.batch(seq_length+1, drop_remainder=True)
@@ -58,7 +61,7 @@ def train_generative_model(model, train_dataset, test_dataset, epochs, learning_
     model.compile(optimizer=optimizer, loss=generative_loss)
 
     # Name of the checkpoint files
-    checkpoint_prefix = os.path.join(TRAIN_DIR, "generative_ckpt_{epoch}")
+    checkpoint_prefix = os.path.join(TRAIN_DIR, "generative_ckpt_{epoch}.weights.h5")
     checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_prefix, save_weights_only=True)
 
     return model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, callbacks=[checkpoint_callback])
@@ -95,6 +98,8 @@ if __name__ == "__main__":
     # Build dataset from encoded unlabelled midis
     train_dataset = build_dataset(train_text, char2idx, opt.seqlen, opt.batch)
     test_dataset = build_dataset(test_text, char2idx, opt.seqlen, opt.batch)
+
+    seq_length = opt.seqlen
 
     # Build generative model
     generative_model = build_generative_model(vocab_size, opt.embed, opt.units, opt.layers, opt.batch, opt.drop)

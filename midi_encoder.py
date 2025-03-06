@@ -20,30 +20,37 @@ def load(datapath, sample_freq=4, piano_range=(33, 93), transpose_range=10, stre
     vocab = set()
 
     if os.path.isfile(datapath):
-        # Path is an individual midi file
+        # Path is an individual file (MIDI or TXT)
         file_extension = os.path.splitext(datapath)[1]
 
-        if file_extension == ".midi" or file_extension == ".mid":
+        if file_extension in [".midi", ".mid"]:
             text = parse_midi(datapath, sample_freq, piano_range, transpose_range, stretching_range)
-            vocab = set(text.split(" "))
+        elif file_extension == ".txt":
+            with open(datapath, "r") as f:
+                text = f.read().strip()  # Remove espaços extras
+        vocab = set(text.split(" "))
+
     else:
         # Read every file in the given directory
         for file in os.listdir(datapath):
             file_path = os.path.join(datapath, file)
             file_extension = os.path.splitext(file_path)[1]
 
-            # Check if it is not a directory and if it has either .midi or .mid extentions
-            if os.path.isfile(file_path) and (file_extension == ".midi" or file_extension == ".mid"):
-                encoded_midi = parse_midi(file_path, sample_freq, piano_range, transpose_range, stretching_range)
+            # Check if it is a valid file format
+            if os.path.isfile(file_path) and file_extension in [".midi", ".mid", ".txt"]:
+                if file_extension in [".midi", ".mid"]:
+                    encoded_midi = parse_midi(file_path, sample_freq, piano_range, transpose_range, stretching_range)
+                else:
+                    with open(file_path, "r") as f:
+                        encoded_midi = f.read().strip()
 
                 if len(encoded_midi) > 0:
                     words = set(encoded_midi.split(" "))
                     vocab = vocab | words
-
                     text += encoded_midi + " "
 
-        # Remove last space
-        text = text[:-1]
+        # Remove trailing space
+        text = text.strip()
 
     return text, vocab
 
