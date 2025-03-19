@@ -103,6 +103,8 @@ def piano_roll2encoding(piano_roll):
     # Transform piano roll into a list of notes in string format
     final_encoding = {}
 
+    print(piano_roll)
+
     perform_i = 0
     for version in piano_roll:
         lastTempo    = -1

@@ -34,7 +34,9 @@ def sample_next(predictions, k):
     return predicted_id
 
 def process_init_text(model, init_text, char2idx, layer_idx, override):
-    model.reset_states()
+    #model.reset_states()
+
+    print(init_text)
 
     for c in init_text.split(" "):
         # Run a forward pass
@@ -42,12 +44,12 @@ def process_init_text(model, init_text, char2idx, layer_idx, override):
             input_eval = tf.expand_dims([char2idx[c]], 0)
 
             # override sentiment neurons
-            override_neurons(model, layer_idx, override)
+           # override_neurons(model, layer_idx, override)
 
             predictions = model(input_eval)
-        except KeyError:
+        except KeyError as b:
             if c != "":
-                print("Can't process char", s)
+                print("Can't process char", c, "because", b)
 
     return predictions
 
@@ -62,7 +64,7 @@ def generate_midi(model, char2idx, idx2char, init_text="", seq_len=256, k=3, lay
     predictions = process_init_text(model, init_text, char2idx, layer_idx, override)
 
     # Here batch size == 1
-    model.reset_states()
+   # model.reset_states()
     for i in range(seq_len):
         # remove the batch dimension
         predictions = tf.squeeze(predictions, 0).numpy()
@@ -74,7 +76,7 @@ def generate_midi(model, char2idx, idx2char, init_text="", seq_len=256, k=3, lay
         midi_generated.append(idx2char[predicted_id])
 
         # override sentiment neurons
-        override_neurons(model, layer_idx, override)
+       # override_neurons(model, layer_idx, override)
 
         #Run a new forward pass
         input_eval = tf.expand_dims([predicted_id], 0)
@@ -118,8 +120,8 @@ if __name__ == "__main__":
 
     # Rebuild model from checkpoint
     model = build_generative_model(vocab_size, opt.embed, opt.units, opt.layers, batch_size=1)
-    model.load_weights(tf.train.latest_checkpoint(opt.model))
-    model.build(tf.TensorShape([1, None]))
+    model.load_weights(opt.model)
+    model.build(tf.TensorShape([1,0]))
 
     # Generate a midi as text
     midi_txt = generate_midi(model, char2idx, idx2char, opt.seqinit, opt.seqlen, layer_idx=opt.cellix, override=override)

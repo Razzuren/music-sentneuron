@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 
 # Dataset Path
 # midi_encoder.py --path datasets/split/train --transp 10 --strech 10
-# midi_encoder.py --path datasets/split/test --transp 10 --strech 10
+# midi_encoder.py --path datasets/split/test.txt --transp 10 --strech 10
 DATASET_PATH = "./midis"
 SAVE_PATH = "./datasets/split"
 os.makedirs(SAVE_PATH, exist_ok=True)

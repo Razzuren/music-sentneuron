@@ -28,27 +28,25 @@ def build_generative_model(vocab_size, embed_dim, lstm_units, lstm_layers, batch
     return model
 
 def build_char2idx(train_vocab, test_vocab):
-    # Merge train and test vocabulary
     vocab = list(train_vocab | test_vocab)
     vocab.sort()
 
-    # Calculate vocab size
-    vocab_size = len(vocab)
+    # Criar dicionário de mapeamento token → índice
+    char2idx = {token: i for i, token in enumerate(vocab)}
 
-    # Create dict to support char to index conversion
-    char2idx = { char:i for i,char in enumerate(vocab) }
-
-    # Save char2idx encoding as a json file for generate midi later
+    # Salvar para uso posterior na geração
     with open(os.path.join(TRAIN_DIR, "char2idx.json"), "w") as f:
         json.dump(char2idx, f)
 
-    return char2idx, vocab_size
+    return char2idx, len(vocab)
+
 
 def build_dataset(text, char2idx, seq_length, batch_size, buffer_size=10000):
-    text_as_int = np.array([char2idx[c] for c in text.split(" ") if c.strip() != ""])
+    text_as_int = np.array([char2idx[token] for token in text.split(" ") if token.strip() != ""])
+
     char_dataset = tf.data.Dataset.from_tensor_slices(text_as_int)
 
-    sequences = char_dataset.batch(seq_length+1, drop_remainder=True)
+    sequences = char_dataset.batch(seq_length + 1, drop_remainder=True)
 
     dataset = sequences.map(__split_input_target)
     dataset = dataset.shuffle(buffer_size).batch(batch_size, drop_remainder=True)
